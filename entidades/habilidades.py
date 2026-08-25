@@ -18,7 +18,8 @@ class PowerUp(pygame.sprite.Sprite):
         super().__init__()
         self.habilidade = habilidade
         tamanho = configuracoes.TILE_SIZE
-        self.image = None 
+        self.image = pygame.Surface((tamanho, tamanho), pygame.SRCALPHA)
+        self.image.fill(configuracoes.COR_POWERUP)
         self.rect = self.image.get_rect(
             topleft=(x,y))
         self._t=0

@@ -7,33 +7,34 @@ IMAGES_DIR = os.path.join(
     BASE_DIR, "assets","images"
 )
 
-_cache={}
+_cache = {}
 _warn = set()
 
-def _placeholder(size,color=(255,0,255)):
-    surf = pygame.Surface(size,pygame.SRCALPHA)
-    surf.fill(*color,180)
-    pygame.draw.rect(surf,(255,255,255),
-                     surf.get_rect(),2)
+def _placeholder(size, color=(255, 0, 255)):
+    surf = pygame.Surface(size, pygame.SRCALPHA)
+    surf.fill((*color, 180))
+    pygame.draw.rect(surf, (255, 255, 255), surf.get_rect(), 2)
     return surf
 
 def load_image(relative_path, tamanho=None,
-               fallback_color=(255,0,255)):
-    chave = (relative_path,tamanho)
+               fallback_color=(255, 0, 255)):
+    chave = (relative_path, tamanho)
     if chave in _cache:
         return _cache[chave]
-    full_path = os.path.join(IMAGES_DIR,
-                             relative_path)
+    full_path = relative_path if os.path.isabs(relative_path) else os.path.join(IMAGES_DIR, relative_path)
     if not os.path.isfile(full_path):
         if relative_path not in _warn:
             _warn.add(relative_path)
-        image = _placeholder(tamanho or (32,32),
-                             fallback_color)
+        image = _placeholder(tamanho or (32, 32), fallback_color)
     else:
         image = pygame.image.load(full_path)
-        image = image.convert_alpha()
+        image = image.convert_alpha() if pygame.display.get_surface() else image
         if tamanho is not None and image.get_size() != tamanho:
-            image = pygame.transform.smoothscale(image,tamanho)
-    
-    
+            image = pygame.transform.smoothscale(image, tamanho)
+
+    _cache[chave] = image
+    return image
+
+
+
 
