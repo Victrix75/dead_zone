@@ -80,16 +80,20 @@ class Personagem(pygame.sprite.Sprite, ABC):
 
 class Jogador(Personagem):
     def __init__(self, x, y):
-        super().__init__(x, y, 56, 56, 5)
+        super().__init__(x, y, 88, 88, 5)
         self.direcao = "direita"
+        self._esta_se_movendo = False
         self.numero_sprite = 1
-        self.sprites = carregar_sprites_jogador((56, 56))
+        self._contador_animacao = 0
+        self.sprites = carregar_sprites_jogador((88, 88))
         self._atualizar_imagem()
 
     def _atualizar_imagem(self):
-        imagens = self.sprites.get(self.direcao, [])
+        direcao = "direita" if not self._esta_se_movendo else self.direcao
+        imagens = self.sprites.get(direcao, [])
         if imagens:
-            self.image = imagens[(self.numero_sprite - 1) % len(imagens)]
+            indice = 0 if not self._esta_se_movendo else (self.numero_sprite - 1) % len(imagens)
+            self.image = imagens[indice]
 
     def update(self):
         teclas = pygame.key.get_pressed()
@@ -101,15 +105,19 @@ class Jogador(Personagem):
         if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
             self.vel.x = configuracoes.VELOCIDADE_JOGADOR
             self.direcao = "direita"
-        if teclas[pygame.K_w] or teclas[pygame.K_UP]:
-            self.vel.y = -configuracoes.VELOCIDADE_JOGADOR
-        if teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
-            self.vel.y = configuracoes.VELOCIDADE_JOGADOR
+        self._esta_se_movendo = self.vel.length_squared() > 0
         self.rect.x += round(self.vel.x)
         self.rect.y += round(self.vel.y)
         tela = pygame.display.get_surface()
         self.rect.clamp_ip(tela.get_rect())
-        self.numero_sprite += 1
+        if self._esta_se_movendo:
+            self._contador_animacao += 1
+            if self._contador_animacao >= 8:
+                self.numero_sprite += 1
+                self._contador_animacao = 0
+        else:
+            self.numero_sprite = 1
+            self._contador_animacao = 0
         self._atualizar_imagem()
 
         

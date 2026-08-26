@@ -1,5 +1,3 @@
-import random
-
 import pygame
 
 import configuracoes
@@ -14,15 +12,11 @@ class Robo(pygame.sprite.Sprite):
         self.image.fill(configuracoes.COR_INIMIGO)
         self.rect = self.image.get_rect(topleft=(x, y))
         self.velocidade = 3
-        self.direcao = 1
 
     def update(self):
-        self.rect.y += self.velocidade
-        self.rect.x += self.direcao * 3
+        self.rect.x -= self.velocidade
         tela = pygame.display.get_surface()
-        if self.rect.left <= 0 or self.rect.right >= tela.get_width():
-            self.direcao *= -1
-        if self.rect.top > tela.get_height():
+        if self.rect.right < 0:
             self.kill()
 
 
@@ -34,7 +28,7 @@ def main():
     todos_sprites = pygame.sprite.Group()
     inimigos = pygame.sprite.Group()
     tiros = pygame.sprite.Group()
-    jogador = Jogador(tela.get_width() // 2, tela.get_height() - 80)
+    jogador = Jogador(tela.get_width() // 2, tela.get_height() // 2)
     todos_sprites.add(jogador)
     pontos = 0
     spawn_timer = 0
@@ -49,13 +43,21 @@ def main():
                 if evento.key == pygame.K_ESCAPE:
                     rodando = False
                 elif evento.key == pygame.K_SPACE:
-                    tiro = Tiro(jogador.rect.centerx, jogador.rect.top)
+                    direcao_tiro = 1 if jogador.direcao == "direita" else -1
+                    tiro = Tiro(
+                        jogador.rect.centerx + direcao_tiro * jogador.rect.width // 2,
+                        jogador.rect.centery,
+                        direcao_tiro,
+                    )
                     todos_sprites.add(tiro)
                     tiros.add(tiro)
 
         spawn_timer += 1
         if spawn_timer > 40:
-            robo = Robo(random.randint(40, tela.get_width() - 40), -40)
+            robo = Robo(
+                tela.get_width() + 40,
+                jogador.rect.centery - 20,
+            )
             todos_sprites.add(robo)
             inimigos.add(robo)
             spawn_timer = 0
