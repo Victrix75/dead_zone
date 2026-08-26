@@ -5,7 +5,7 @@ from entidades.personagem import Jogador
 from entidades.projetil import Tiro
 
 
-class Robo(pygame.sprite.Sprite):
+class zumbie(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.image = pygame.Surface((40, 40))
@@ -43,18 +43,20 @@ def main():
                 if evento.key == pygame.K_ESCAPE:
                     rodando = False
                 elif evento.key == pygame.K_SPACE:
-                    direcao_tiro = 1 if jogador.direcao == "direita" else -1
-                    tiro = Tiro(
-                        jogador.rect.centerx + direcao_tiro * jogador.rect.width // 2,
-                        jogador.rect.centery,
-                        direcao_tiro,
-                    )
-                    todos_sprites.add(tiro)
-                    tiros.add(tiro)
+                    if jogador.cooldown_tiro <= 0:
+                        direcao_tiro = 1 if jogador.direcao == "direita" else -1
+                        tiro = Tiro(
+                            jogador.rect.centerx + direcao_tiro * jogador.rect.width // 2,
+                            jogador.rect.centery,
+                            direcao_tiro,
+                        )
+                        todos_sprites.add(tiro)
+                        tiros.add(tiro)
+                        jogador.cooldown_tiro = configuracoes.COOLDOWN_TIRO
 
         spawn_timer += 1
         if spawn_timer > 40:
-            robo = Robo(
+            robo = (
                 tela.get_width() + 40,
                 jogador.rect.centery - 20,
             )

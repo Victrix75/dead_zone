@@ -20,7 +20,7 @@ def carregar_sprites(classe, tamanho=None):
 def _encontrar_arquivos(classe, direcao):
     diretorios = [
         IMAGES_DIR,
-        os.path.join(os.path.dirname(__file__), "entidades", "front", "sprites"),
+        os.path.join(os.path.dirname(__file__), "entidades", "front", "sprites", classe),
     ]
     arquivos = []
     for diretorio in diretorios:
@@ -59,3 +59,28 @@ def _numero_do_arquivo(caminho):
 
 def carregar_sprites_jogador(tamanho=None):
     return carregar_sprites("Jogador", tamanho)
+
+
+def carregar_sprite_tiro(classe, tamanho=None):
+    """Procura por imagens de tiro nomeadas com o sufixo 'tiro'.
+    Ex: Jogador,direita,tiro.png ou Jogador,esquerda,tiro.png
+    Retorna um dict {'esquerda': Surface|None, 'direita': Surface|None}.
+    """
+    sprites = {"esquerda": None, "direita": None}
+    diretorios = [
+        IMAGES_DIR,
+        os.path.join(os.path.dirname(__file__), "entidades", "front", "sprites"),
+    ]
+    arquivos = []
+    for diretorio in diretorios:
+        arquivos.extend(glob.glob(os.path.join(diretorio, "*")))
+
+    for arquivo in arquivos:
+        nome = os.path.splitext(os.path.basename(arquivo))[0]
+        partes = [p.strip().lower() for p in nome.split(",")]
+        if len(partes) >= 3 and partes[-1] == "tiro" and partes[0] == classe.lower():
+            direcao = partes[1]
+            if direcao in sprites and sprites[direcao] is None:
+                sprites[direcao] = load_image(arquivo, tamanho)
+
+    return sprites

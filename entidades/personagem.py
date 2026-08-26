@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import pygame
 import configuracoes
-from sprites import carregar_sprites_jogador
+from sprites import carregar_sprites_jogador, carregar_sprite_tiro, carregar_sprite_dano
 
 
 class Personagem(pygame.sprite.Sprite, ABC):
@@ -34,6 +34,11 @@ class Personagem(pygame.sprite.Sprite, ABC):
             return
         self.vida -= dano
         self.vidas = self.vida
+        # Ativa o timer de exibição do sprite de dano (se suportado pelo personagem)
+        if hasattr(self, "_DANO_MOSTRAR"):
+            self._dano_timer = self._DANO_MOSTRAR
+        else:
+            self._dano_timer = 20
         if self.vida <=0:
             self.vida = 0
             self.vivo=False
@@ -86,7 +91,12 @@ class Jogador(Personagem):
         self.numero_sprite = 1
         self._contador_animacao = 0
         self.sprites = carregar_sprites_jogador((88, 88))
+        self.sprites_tiro = carregar_sprite_tiro("Jogador", (88, 88))
+        self.sprites_dano = carregar_sprite_dano("Jogador", (88, 88))
         self._atualizar_imagem()
+        self.cooldown_tiro = 0
+        self._dano_timer = 0
+        self._DANO_MOSTRAR = 20
 
     def _atualizar_imagem(self):
         direcao = "direita" if not self._esta_se_movendo else self.direcao
@@ -118,7 +128,25 @@ class Jogador(Personagem):
         else:
             self.numero_sprite = 1
             self._contador_animacao = 0
-        self._atualizar_imagem()
+        # Decrementar cooldown do tiro
+        if self.cooldown_tiro > 0:
+            self.cooldown_tiro -= 1
 
-        
-                
+        # Decrementar timer de dano
+        if self._dano_timer > 0:
+            self._dano_timer -= 1
+
+        # Prioridade: dano > tiro > animação normal
+        if self._dano_timer > 0:
+            dano_img = self.sprites_dano.get(self.direcao)
+            if dano_img:
+                self.image = dano_img
+                return
+
+        if self.cooldown_tiro > 0:
+            tiro_img = self.sprites_tiro.get(self.direcao)
+            if tiro_img:
+                self.image = tiro_img
+                return
+
+        self._atualizar_imagem()
