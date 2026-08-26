@@ -138,15 +138,21 @@ class Jogador(Personagem):
 
         # Prioridade: dano > tiro > animação normal
         if self._dano_timer > 0:
-            dano_img = self.sprites_dano.get(self.direcao)
+            dano_img = self.sprites_dano.get(self.direcao) if self.sprites_dano else None
             if dano_img:
                 self.image = dano_img
-                return
+            else:
+                # Fallback: usar animação normal ou imagem vermelha/alterada
+                self._atualizar_imagem()
+            return
 
         if self.cooldown_tiro > 0:
-            tiro_img = self.sprites_tiro.get(self.direcao)
+            tiro_img = self.sprites_tiro.get(self.direcao) if self.sprites_tiro else None
             if tiro_img:
                 self.image = tiro_img
-                return
+            else:
+                # Fallback: usar animação normal
+                self._atualizar_imagem()
+            return
 
         self._atualizar_imagem()

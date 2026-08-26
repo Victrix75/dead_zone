@@ -56,7 +56,7 @@ def main():
 
         spawn_timer += 1
         if spawn_timer > 40:
-            robo = (
+            robo = zumbie(
                 tela.get_width() + 40,
                 jogador.rect.centery - 20,
             )
