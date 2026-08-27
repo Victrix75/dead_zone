@@ -55,7 +55,7 @@ def main():
                         jogador.cooldown_tiro = configuracoes.COOLDOWN_TIRO
 
         spawn_timer += 1
-        if spawn_timer > 40:
+        if spawn_timer > 20:
             robo = zumbie(
                 tela.get_width() + 40,
                 jogador.rect.centery - 20,

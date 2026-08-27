@@ -6,7 +6,7 @@ from assets import IMAGES_DIR, load_image
 
 
 def carregar_sprites(classe, tamanho=None):
-    """Carrega arquivos no formato Classe,direcao,numero.ext."""
+    #Carrega arquivos no formato Classe,direcao,numero.ext.#
     sprites = {"esquerda": [], "direita": []}
     for direcao in sprites:
         arquivos = _encontrar_arquivos(classe, direcao)
