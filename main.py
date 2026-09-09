@@ -1,6 +1,7 @@
 import pygame
 
 import configuracoes
+from cenario import Cenario
 from entidades.personagem import Jogador
 from entidades.projetil import Tiro
 
@@ -29,6 +30,7 @@ def main():
     inimigos = pygame.sprite.Group()
     tiros = pygame.sprite.Group()
     jogador = Jogador(tela.get_width() // 2, tela.get_height() // 2)
+    cenario = Cenario(tela)
     todos_sprites.add(jogador)
     pontos = 0
     spawn_timer = 0
@@ -71,7 +73,7 @@ def main():
                 rodando = False
 
         todos_sprites.update()
-        tela.fill(configuracoes.BG_COR)
+        cenario.desenhar()
         todos_sprites.draw(tela)
         fonte = pygame.font.Font(None, 30)
         texto = fonte.render(
