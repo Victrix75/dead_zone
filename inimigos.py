@@ -32,7 +32,7 @@ class ZumbiBasico(Inimigo):
     def __init__(self, x, y):
         super().__init__(
             x=x,
-            y=y - 55,
+            y=y - 70,
             largura=70,
             altura=70,
             velocidade=45,
