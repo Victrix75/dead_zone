@@ -105,21 +105,26 @@ class Jogador(Personagem):
             indice = 0 if not self._esta_se_movendo else (self.numero_sprite - 1) % len(imagens)
             self.image = imagens[indice]
 
-    def update(self):
+    def update(self, dt=1/60):
         teclas = pygame.key.get_pressed()
         self.vel.x = 0
         self.vel.y = 0
+
         if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
             self.vel.x = -configuracoes.VELOCIDADE_JOGADOR
             self.direcao = "esquerda"
         if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
             self.vel.x = configuracoes.VELOCIDADE_JOGADOR
             self.direcao = "direita"
+
         self._esta_se_movendo = self.vel.length_squared() > 0
-        self.rect.x += round(self.vel.x)
-        self.rect.y += round(self.vel.y)
+        self.rect.x += self.vel.x * dt
+        self.rect.y += self.vel.y * dt
+
         tela = pygame.display.get_surface()
-        self.rect.clamp_ip(tela.get_rect())
+        if tela:
+            self.rect.clamp_ip(tela.get_rect())
+
         if self._esta_se_movendo:
             self._contador_animacao += 1
             if self._contador_animacao >= 8:
@@ -128,21 +133,18 @@ class Jogador(Personagem):
         else:
             self.numero_sprite = 1
             self._contador_animacao = 0
-        # Decrementar cooldown do tiro
+
         if self.cooldown_tiro > 0:
             self.cooldown_tiro -= 1
 
-        # Decrementar timer de dano
         if self._dano_timer > 0:
             self._dano_timer -= 1
 
-        # Prioridade: dano > tiro > animação normal
         if self._dano_timer > 0:
             dano_img = self.sprites_dano.get(self.direcao) if self.sprites_dano else None
             if dano_img:
                 self.image = dano_img
             else:
-                # Fallback: usar animação normal ou imagem vermelha/alterada
                 self._atualizar_imagem()
             return
 
@@ -151,7 +153,6 @@ class Jogador(Personagem):
             if tiro_img:
                 self.image = tiro_img
             else:
-                # Fallback: usar animação normal
                 self._atualizar_imagem()
             return
 

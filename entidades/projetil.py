@@ -10,8 +10,8 @@ class Tiro(pygame.sprite.Sprite):
 		self.rect = self.image.get_rect(center=(x, y))
 		self.velocidade = configuracoes.VELOCIDADE_TIRO * direcao
 
-	def update(self):
-		self.rect.x += self.velocidade
+	def update(self, dt=1/60):
+		self.rect.x += self.velocidade * dt
 		tela = pygame.display.get_surface()
-		if self.rect.right < 0 or self.rect.left > tela.get_width():
+		if tela and (self.rect.right < 0 or self.rect.left > tela.get_width()):
 			self.kill()
