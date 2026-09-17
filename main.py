@@ -79,7 +79,14 @@ def estado_menu(tela, eventos):
     return ESTADO_MENU
 
 
-def estado_game_over(tela, eventos, pontos):
+def formatar_tempo(segundos):
+    """Converte os segundos da partida para o formato minutos:segundos."""
+    minutos = int(segundos) // 60
+    segundos_restantes = int(segundos) % 60
+    return f"{minutos:02d}:{segundos_restantes:02d}"
+
+
+def estado_game_over(tela, eventos, pontos, tempo):
     """Renderiza a tela de derrota e controla suas opções."""
     fonte_titulo = pygame.font.Font(None, 84)
     fonte_pontos = pygame.font.Font(None, 42)
@@ -92,7 +99,7 @@ def estado_game_over(tela, eventos, pontos):
     tela.blit(titulo, titulo_rect)
 
     resultado = fonte_pontos.render(
-        f"Pontuação: {pontos}",
+        f"Pontuação: {pontos}  |  Tempo: {formatar_tempo(tempo)}",
         True,
         configuracoes.COR_TEXTO,
     )
@@ -153,7 +160,10 @@ def criar_fase_1(tela):
     tiros = pygame.sprite.Group()
 
     linha_chao = tela.get_height() - 80
-    jogador = Jogador(tela.get_width() // 2, linha_chao - 90)
+    jogador = Jogador(
+        tela.get_width() // 2,
+        linha_chao - configuracoes.TAMANHO_JOGADOR,
+    )
     cenario = Cenario(tela)
     todos_sprites.add(jogador)
 
@@ -164,6 +174,7 @@ def criar_fase_1(tela):
         "jogador": jogador,
         "cenario": cenario,
         "pontos": 0,
+        "tempo": 0.0,
         "spawn_timer": 0,
         "spawn_intervalo": random.randint(240, 420),
         "linha_inimigo": linha_chao,
@@ -177,6 +188,7 @@ def estado_fase_1(tela, eventos, dt, fase):
     inimigos = fase["inimigos"]
     tiros = fase["tiros"]
     cenario = fase["cenario"]
+    fase["tempo"] += dt
 
     for evento in eventos:
         if evento.type == pygame.QUIT:
@@ -208,13 +220,33 @@ def estado_fase_1(tela, eventos, dt, fase):
 
     for inimigo in inimigos:
         inimigo.bloqueado = (
-            inimigo.rect.left <= jogador.rect.right + 10
+            inimigo.rect.left <= jogador.rect.right
             and inimigo.rect.right >= jogador.rect.left
         )
 
     todos_sprites.update(dt)
 
-    area_ataque = jogador.rect.inflate(24, 0)
+    # Bloqueia somente o jogador quando a hitbox menor entra no inimigo.
+    for inimigo in inimigos:
+        if not jogador.hitbox.colliderect(inimigo.rect):
+            continue
+        if jogador.vel.x > 0:
+            jogador.hitbox.right = inimigo.rect.left
+        elif jogador.vel.x < 0:
+            jogador.hitbox.left = inimigo.rect.right
+        elif jogador.vel.x == 0:
+            continue
+        elif jogador.hitbox.centerx < inimigo.rect.centerx:
+            jogador.hitbox.right = inimigo.rect.left
+        else:
+            jogador.hitbox.left = inimigo.rect.right
+        jogador.rect.center = jogador.hitbox.center
+        jogador.pos.x = jogador.rect.x
+        jogador.atualizar_hitbox()
+
+    # Uma margem de 1 pixel permite atacar no instante em que o zumbi encosta.
+    # O ataque acontece quando os sprites visuais encostam.
+    area_ataque = jogador.rect.inflate(2, 0)
     inimigos_atacando = [
         inimigo
         for inimigo in inimigos
@@ -225,11 +257,6 @@ def estado_fase_1(tela, eventos, dt, fase):
             jogador.tomar_dano(1)
             if not jogador.vivo:
                 return ESTADO_GAME_OVER, fase
-
-        if jogador.rect.centerx < inimigo.rect.centerx:
-            inimigo.rect.left = jogador.rect.right + 10
-        else:
-            inimigo.rect.right = jogador.rect.left - 10
 
     inimigos_ordenados = sorted(inimigos, key=lambda inimigo: inimigo.rect.left)
     for anterior, atual in zip(inimigos_ordenados, inimigos_ordenados[1:]):
@@ -242,7 +269,7 @@ def estado_fase_1(tela, eventos, dt, fase):
 
     fonte = pygame.font.Font(None, 30)
     texto = fonte.render(
-        f"Vida: {jogador.vida}  |  Pontos: {fase['pontos']}",
+        f"Vida: {jogador.vida}  |  Pontos: {fase['pontos']}  |  Tempo: {formatar_tempo(fase['tempo'])}",
         True,
         configuracoes.COR_TEXTO,
     )
@@ -278,7 +305,12 @@ def main():
                 fase_1 = criar_fase_1(tela)
             estado_atual, fase_1 = estado_fase_1(tela, eventos, dt, fase_1)
         elif estado_atual == ESTADO_GAME_OVER:
-            proximo_estado = estado_game_over(tela, eventos, fase_1["pontos"])
+            proximo_estado = estado_game_over(
+                tela,
+                eventos,
+                fase_1["pontos"],
+                fase_1["tempo"],
+            )
             if proximo_estado == ESTADO_FASE_1:
                 fase_1 = None
             estado_atual = proximo_estado

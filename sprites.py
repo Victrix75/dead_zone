@@ -2,6 +2,8 @@ import glob
 import os
 import re
 
+import pygame
+
 from assets import IMAGES_DIR, load_image
 
 
@@ -159,3 +161,41 @@ def carregar_sprite_dano(classe, tamanho=None):
             sprites["direita"] = fallback.copy()
 
     return sprites
+
+
+def carregar_sprites_inimigo(tamanho=None):
+    """Carrega a caminhada do zumbi e espelha a imagem para a direita."""
+    diretorio = os.path.join(
+        os.path.dirname(__file__), "entidades", "front", "sprites", "jogador"
+    )
+    arquivos = []
+    for arquivo in glob.glob(os.path.join(diretorio, "*")):
+        nome = os.path.splitext(os.path.basename(arquivo))[0].lower()
+        nome_normalizado = nome.replace("zunbi", "zumbi")
+        if nome_normalizado.startswith("zumbibasicoesquerda"):
+            arquivos.append(arquivo)
+
+    arquivos.sort(key=_numero_do_arquivo)
+    caminhada_esquerda = [load_image(arquivo, tamanho) for arquivo in arquivos]
+    caminhada_direita = [
+        pygame.transform.flip(imagem, True, False)
+        for imagem in caminhada_esquerda
+    ]
+    return {"esquerda": caminhada_esquerda, "direita": caminhada_direita}
+
+
+def carregar_sprite_inimigo_estado(nome_arquivo, tamanho=None):
+    """Carrega um estado especial do zumbi e cria a versão espelhada."""
+    caminho = os.path.join(
+        os.path.dirname(__file__),
+        "entidades",
+        "front",
+        "sprites",
+        "jogador",
+        nome_arquivo,
+    )
+    imagem = load_image(caminho, tamanho)
+    return {
+        "esquerda": imagem,
+        "direita": pygame.transform.flip(imagem, True, False),
+    }

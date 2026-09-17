@@ -17,6 +17,9 @@ class Personagem(pygame.sprite.Sprite, ABC):
         self.pos = pygame.Vector2(x, y)
         self.vel = pygame.Vector2(0, 0)
         self.rect = pygame.Rect(x, y, largura, altura)
+        # A hitbox menor deixa a colisão mais justa sem reduzir o sprite.
+        margem = configuracoes.MARGEM_COLISAO_JOGADOR
+        self.hitbox = self.rect.inflate(-margem, -margem)
         self.maximo_vidas = vida
         self.vidas = vida
         self.vida = vida
@@ -48,6 +51,10 @@ class Personagem(pygame.sprite.Sprite, ABC):
             self.vel.y + configuracoes.GRAVIDADE,
             configuracoes.VEL_QUEDA_LIVRE
         )
+
+    def atualizar_hitbox(self):
+        """Mantém a hitbox reduzida centralizada no sprite."""
+        self.hitbox.center = self.rect.center
 
     def mover_colidir_x(self,blocos):
         parede = 0
@@ -85,14 +92,15 @@ class Personagem(pygame.sprite.Sprite, ABC):
 
 class Jogador(Personagem):
     def __init__(self, x, y):
-        super().__init__(x, y, 88, 88, 5)
+        super().__init__(x, y, configuracoes.TAMANHO_JOGADOR, configuracoes.TAMANHO_JOGADOR, 10)
         self.direcao = "direita"
         self._esta_se_movendo = False
         self.numero_sprite = 1
         self._contador_animacao = 0
-        self.sprites = carregar_sprites_jogador((88, 88))
-        self.sprites_tiro = carregar_sprite_tiro("Jogador", (88, 88))
-        self.sprites_dano = carregar_sprite_dano("Jogador", (88, 88))
+        tamanho = (configuracoes.TAMANHO_JOGADOR, configuracoes.TAMANHO_JOGADOR)
+        self.sprites = carregar_sprites_jogador(tamanho)
+        self.sprites_tiro = carregar_sprite_tiro("Jogador", tamanho)
+        self.sprites_dano = carregar_sprite_dano("Jogador", tamanho)
         self._atualizar_imagem()
         self.cooldown_tiro = 0
         self._dano_timer = 0
@@ -124,6 +132,7 @@ class Jogador(Personagem):
         tela = pygame.display.get_surface()
         if tela:
             self.rect.clamp_ip(tela.get_rect())
+        self.atualizar_hitbox()
 
         if self._esta_se_movendo:
             self._contador_animacao += 1
