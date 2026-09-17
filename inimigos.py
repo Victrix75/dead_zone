@@ -10,6 +10,8 @@ class Inimigo(pygame.sprite.Sprite):
         self.altura = altura
         self.velocidade = velocidade
         self.vida = vida
+        self.tempo_ataque = 0.0
+        self.bloqueado = False
         self.cor = cor or configuracoes.COR_INIMIGO
         self.image = pygame.Surface((largura, altura), pygame.SRCALPHA)
         self.image.fill((0, 0, 0, 0))
@@ -17,7 +19,9 @@ class Inimigo(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
 
     def update(self, dt=1/60):
-        self.rect.x -= self.velocidade * dt
+        if not self.bloqueado:
+            self.rect.x -= self.velocidade * dt
+        self.tempo_ataque = max(0.0, self.tempo_ataque - dt)
         tela = pygame.display.get_surface()
         if tela and self.rect.right < 0:
             self.kill()
@@ -26,6 +30,12 @@ class Inimigo(pygame.sprite.Sprite):
         self.vida -= dano
         if self.vida <= 0:
             self.kill()
+
+    def pode_atacar(self):
+        if self.tempo_ataque > 0:
+            return False
+        self.tempo_ataque = configuracoes.COOLDOWN_ATAQUE_INIMIGO
+        return True
 
 
 class ZumbiBasico(Inimigo):

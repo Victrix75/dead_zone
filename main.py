@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 import configuracoes
@@ -5,7 +7,13 @@ from cenario import Cenario
 from entidades.personagem import Jogador
 from entidades.projetil import Tiro
 from inimigos import ZumbiBasico
-from estados import Botao, ESTADO_MENU, ESTADO_FASE_1, ESTADO_SAIR
+from estados import (
+    Botao,
+    ESTADO_GAME_OVER,
+    ESTADO_MENU,
+    ESTADO_FASE_1,
+    ESTADO_SAIR,
+)
 
 
 def criar_menu(tela):
@@ -71,6 +79,73 @@ def estado_menu(tela, eventos):
     return ESTADO_MENU
 
 
+def estado_game_over(tela, eventos, pontos):
+    """Renderiza a tela de derrota e controla suas opções."""
+    fonte_titulo = pygame.font.Font(None, 84)
+    fonte_pontos = pygame.font.Font(None, 42)
+    fonte_botao = pygame.font.Font(None, 36)
+
+    tela.fill((35, 12, 18))
+
+    titulo = fonte_titulo.render("GAME OVER", True, (220, 60, 70))
+    titulo_rect = titulo.get_rect(center=(tela.get_width() // 2, 170))
+    tela.blit(titulo, titulo_rect)
+
+    resultado = fonte_pontos.render(
+        f"Pontuação: {pontos}",
+        True,
+        configuracoes.COR_TEXTO,
+    )
+    resultado_rect = resultado.get_rect(center=(tela.get_width() // 2, 270))
+    tela.blit(resultado, resultado_rect)
+
+    largura_botao = 260
+    altura_botao = 58
+    centro_x = tela.get_width() // 2
+    inicio_botoes = tela.get_height() // 2 + 80
+    botoes = {
+        "reiniciar": Botao(
+            centro_x - largura_botao // 2,
+            inicio_botoes,
+            largura_botao,
+            altura_botao,
+            "Jogar novamente",
+            (40, 180, 110),
+            configuracoes.COR_TEXTO,
+            fonte_botao,
+        ),
+        "menu": Botao(
+            centro_x - largura_botao // 2,
+            inicio_botoes + 80,
+            largura_botao,
+            altura_botao,
+            "Menu principal",
+            (80, 90, 110),
+            configuracoes.COR_TEXTO,
+            fonte_botao,
+        ),
+    }
+
+    for botao in botoes.values():
+        botao.desenhar(tela)
+
+    pygame.display.flip()
+
+    for evento in eventos:
+        if evento.type == pygame.QUIT:
+            return ESTADO_SAIR
+        if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+            return ESTADO_MENU
+        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            pos = evento.pos
+            if botoes["reiniciar"].clique(pos):
+                return ESTADO_FASE_1
+            if botoes["menu"].clique(pos):
+                return ESTADO_MENU
+
+    return ESTADO_GAME_OVER
+
+
 def criar_fase_1(tela):
     """Cria os grupos e objetos da fase 1 apenas uma vez."""
     todos_sprites = pygame.sprite.Group()
@@ -90,7 +165,7 @@ def criar_fase_1(tela):
         "cenario": cenario,
         "pontos": 0,
         "spawn_timer": 0,
-        "spawn_intervalo": 120,
+        "spawn_intervalo": random.randint(240, 420),
         "linha_inimigo": linha_chao,
     }
 
@@ -123,21 +198,45 @@ def estado_fase_1(tela, eventos, dt, fase):
 
     fase["spawn_timer"] += dt * configuracoes.FPS
     if fase["spawn_timer"] >= fase["spawn_intervalo"]:
-        robo = ZumbiBasico(
-            tela.get_width() + 40,
-            fase["linha_inimigo"],
-        )
+        robo = ZumbiBasico(tela.get_width() + 40, fase["linha_inimigo"])
         todos_sprites.add(robo)
         inimigos.add(robo)
         fase["spawn_timer"] = 0
+        fase["spawn_intervalo"] = random.randint(240, 420)
 
     fase["pontos"] += len(pygame.sprite.groupcollide(inimigos, tiros, True, True))
-    if pygame.sprite.spritecollide(jogador, inimigos, True):
-        jogador.tomar_dano(1)
-        if not jogador.vivo:
-            return ESTADO_MENU, None
+
+    for inimigo in inimigos:
+        inimigo.bloqueado = (
+            inimigo.rect.left <= jogador.rect.right + 10
+            and inimigo.rect.right >= jogador.rect.left
+        )
 
     todos_sprites.update(dt)
+
+    area_ataque = jogador.rect.inflate(24, 0)
+    inimigos_atacando = [
+        inimigo
+        for inimigo in inimigos
+        if area_ataque.colliderect(inimigo.rect)
+    ]
+    for inimigo in inimigos_atacando:
+        if inimigo.pode_atacar():
+            jogador.tomar_dano(1)
+            if not jogador.vivo:
+                return ESTADO_GAME_OVER, fase
+
+        if jogador.rect.centerx < inimigo.rect.centerx:
+            inimigo.rect.left = jogador.rect.right + 10
+        else:
+            inimigo.rect.right = jogador.rect.left - 10
+
+    inimigos_ordenados = sorted(inimigos, key=lambda inimigo: inimigo.rect.left)
+    for anterior, atual in zip(inimigos_ordenados, inimigos_ordenados[1:]):
+        distancia_minima = anterior.rect.width + 10
+        if atual.rect.left < anterior.rect.right + 10:
+            atual.rect.left = anterior.rect.left + distancia_minima
+
     cenario.desenhar()
     todos_sprites.draw(tela)
 
@@ -170,11 +269,19 @@ def main():
         eventos = pygame.event.get()
 
         if estado_atual == ESTADO_MENU:
-            estado_atual = estado_menu(tela, eventos)
+            proximo_estado = estado_menu(tela, eventos)
+            if proximo_estado == ESTADO_FASE_1:
+                fase_1 = None
+            estado_atual = proximo_estado
         elif estado_atual == ESTADO_FASE_1:
             if fase_1 is None:
                 fase_1 = criar_fase_1(tela)
             estado_atual, fase_1 = estado_fase_1(tela, eventos, dt, fase_1)
+        elif estado_atual == ESTADO_GAME_OVER:
+            proximo_estado = estado_game_over(tela, eventos, fase_1["pontos"])
+            if proximo_estado == ESTADO_FASE_1:
+                fase_1 = None
+            estado_atual = proximo_estado
         elif estado_atual == ESTADO_SAIR:
             rodando = False
 

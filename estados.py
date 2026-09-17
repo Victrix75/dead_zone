@@ -3,6 +3,7 @@ import pygame
 # Estados principais do jogo para separar as telas e a lógica.
 ESTADO_MENU = "menu"
 ESTADO_FASE_1 = "fase_1"
+ESTADO_GAME_OVER = "game_over"
 ESTADO_SAIR = "sair"
 
 
