@@ -4,6 +4,7 @@ import configuracoes
 from sprites import (
     carregar_sprites_jogador,
     carregar_sprites_morte_jogador,
+    carregar_sprite_powerup_cooldown,
     carregar_sprite_tiro,
     carregar_sprite_dano,
 )
@@ -107,10 +108,14 @@ class Jogador(Personagem):
         tamanho = (configuracoes.TAMANHO_JOGADOR, configuracoes.TAMANHO_JOGADOR)
         self.sprites = carregar_sprites_jogador(tamanho)
         self.sprites_morte = carregar_sprites_morte_jogador(tamanho)
+        self.sprite_powerup_cooldown = carregar_sprite_powerup_cooldown()
         self.sprites_tiro = carregar_sprite_tiro("Jogador", tamanho)
         self.sprites_dano = carregar_sprite_dano("Jogador", tamanho)
         self._atualizar_imagem()
         self.cooldown_tiro = 0
+        self.cooldown_tiro_max = configuracoes.COOLDOWN_TIRO
+        self.cooldown_reduzido_ativo = False
+        self.indicador_cooldown_timer = 0.0
         self._dano_timer = 0
         self._DANO_MOSTRAR = 20
 
@@ -121,6 +126,24 @@ class Jogador(Personagem):
         self.esta_no_chao = False
         return True
 
+    def reduzir_cooldown_tiro(self):
+        cooldown_minimo = max(1, (configuracoes.COOLDOWN_TIRO + 4) // 5)
+        self.cooldown_tiro_max = max(
+            cooldown_minimo,
+            int(self.cooldown_tiro_max * 0.85),
+        )
+        self.cooldown_tiro = min(self.cooldown_tiro, self.cooldown_tiro_max)
+        self.cooldown_reduzido_ativo = True
+        self.indicador_cooldown_timer = 2.5
+
+    def desenhar_powerup_cooldown(self, surface):
+        if self.indicador_cooldown_timer <= 0:
+            return
+        indicador_rect = self.sprite_powerup_cooldown.get_rect(
+            midbottom=(self.rect.centerx, self.rect.top - 4)
+        )
+        surface.blit(self.sprite_powerup_cooldown, indicador_rect)
+
     def _atualizar_imagem(self):
         direcao = "direita" if not self._esta_se_movendo else self.direcao
         imagens = self.sprites.get(direcao, [])
@@ -129,6 +152,9 @@ class Jogador(Personagem):
             self.image = imagens[indice]
 
     def update(self, dt=1/60):
+        self.indicador_cooldown_timer = max(
+            0.0, self.indicador_cooldown_timer - dt
+        )
         teclas = pygame.key.get_pressed()
         self.vel.x = 0
 

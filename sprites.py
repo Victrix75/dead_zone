@@ -73,6 +73,17 @@ def carregar_sprites_morte_jogador(tamanho=None):
     return [load_image(arquivo, tamanho) for arquivo in arquivos]
 
 
+def carregar_sprite_powerup_cooldown(tamanho=(120, 19)):
+    caminho = os.path.join(
+        os.path.dirname(__file__),
+        "entidades",
+        "front",
+        "sprites",
+        "-cooldown.png",
+    )
+    return load_image(caminho, tamanho)
+
+
 def carregar_sprite_tiro(classe, tamanho=None):
     """Procura por imagens de tiro em subdiretórios ou com sufixo 'tiro'.
     Ex: Jogador,direita,tiro.png ou pasta tiro/Jogador,direita,1.png

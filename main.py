@@ -248,7 +248,7 @@ def estado_fase_1(tela, eventos, dt, fase):
                     )
                     todos_sprites.add(tiro)
                     tiros.add(tiro)
-                    jogador.cooldown_tiro = configuracoes.COOLDOWN_TIRO
+                    jogador.cooldown_tiro = jogador.cooldown_tiro_max
         elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             if jogador.cooldown_tiro <= 0:
                 direcao_tiro = 1 if jogador.direcao == "direita" else -1
@@ -259,7 +259,7 @@ def estado_fase_1(tela, eventos, dt, fase):
                 )
                 todos_sprites.add(tiro)
                 tiros.add(tiro)
-                jogador.cooldown_tiro = configuracoes.COOLDOWN_TIRO
+                jogador.cooldown_tiro = jogador.cooldown_tiro_max
 
     fase["spawn_timer"] += dt * configuracoes.FPS
     if fase["tempo"] >= 15 and not fase["zumbi_forte_apareceu"]:
@@ -296,6 +296,8 @@ def estado_fase_1(tela, eventos, dt, fase):
             inimigos.remove(inimigo)
             corpos_zumbis.add(inimigo)
             fase["pontos"] += 1
+            if random.random() < 0.09:
+                jogador.reduzir_cooldown_tiro()
 
     for inimigo in inimigos:
         inimigo.multiplicador_velocidade = multiplicador_velocidade
@@ -365,6 +367,7 @@ def estado_fase_1(tela, eventos, dt, fase):
 
     cenario.desenhar()
     todos_sprites.draw(tela)
+    jogador.desenhar_powerup_cooldown(tela)
 
     fonte = pygame.font.Font(None, 30)
     texto = fonte.render(
