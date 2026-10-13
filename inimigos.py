@@ -10,7 +10,17 @@ from sprites import (
 
 
 class Inimigo(pygame.sprite.Sprite):
-    def __init__(self, x, y, largura=70, altura=70, velocidade=45, vida=1, cor=None):
+    def __init__(
+        self,
+        x,
+        y,
+        largura=70,
+        altura=70,
+        velocidade=45,
+        vida=1,
+        cor=None,
+        direcao="esquerda",
+    ):
         super().__init__()
         self.largura = largura
         self.altura = altura
@@ -23,7 +33,7 @@ class Inimigo(pygame.sprite.Sprite):
         self.tempo_animacao = 0.0
         self.tempo_sprite_especial = 0.0
         self.sprite_especial = None
-        self.direcao = "esquerda"
+        self.direcao = direcao
         self.cor = cor or configuracoes.COR_INIMIGO
         self.image = pygame.Surface((largura, altura), pygame.SRCALPHA)
         self.image.fill((0, 0, 0, 0))
@@ -47,13 +57,19 @@ class Inimigo(pygame.sprite.Sprite):
 
     def update(self, dt=1/60):
         if not self.bloqueado:
-            self.rect.x -= self.velocidade * self.multiplicador_velocidade * dt
+            deslocamento = self.velocidade * self.multiplicador_velocidade * dt
+            if self.direcao == "esquerda":
+                self.rect.x -= deslocamento
+            else:
+                self.rect.x += deslocamento
         self.tempo_ataque = max(0.0, self.tempo_ataque - dt)
         self.tempo_sprite_especial = max(0.0, self.tempo_sprite_especial - dt)
         self.tempo_animacao += dt if not self.bloqueado else 0
         self.atualizar_sprite()
         tela = pygame.display.get_surface()
-        if tela and self.rect.right < 0:
+        saiu_pela_esquerda = self.direcao == "esquerda" and self.rect.right < 0
+        saiu_pela_direita = self.direcao == "direita" and self.rect.left > tela.get_width() if tela else False
+        if tela and (saiu_pela_esquerda or saiu_pela_direita):
             self.kill()
 
     def tomar_dano(self, dano):
@@ -74,16 +90,17 @@ class Inimigo(pygame.sprite.Sprite):
 
 
 class ZumbiBasico(Inimigo):
-    def __init__(self, x, y):
+    def __init__(self, x, y, direcao="esquerda"):
         tamanho = configuracoes.TAMANHO_INIMIGO
         super().__init__(
             x=x,
             y=y - tamanho,
             largura=tamanho,
             altura=tamanho,
-            velocidade=45,
+            velocidade=100,
             vida=1,
             cor=configuracoes.COR_INIMIGO,
+            direcao=direcao,
         )
         tamanho_sprite = (tamanho, tamanho)
         self.configurar_sprites(carregar_sprites_inimigo(tamanho_sprite))
@@ -95,16 +112,17 @@ class ZumbiBasico(Inimigo):
 
 
 class ZumbiForte(Inimigo):
-    def __init__(self, x, y):
+    def __init__(self, x, y, direcao="esquerda"):
         tamanho = int(configuracoes.TAMANHO_INIMIGO * 1.35)
         super().__init__(
             x=x,
             y=y - tamanho,
             largura=tamanho,
             altura=tamanho,
-            velocidade=35,
+            velocidade=70,
             vida=3,
             cor=configuracoes.COR_CHEFAO,
+            direcao=direcao,
         )
         tamanho_sprite = (tamanho, tamanho)
         self.dano_ataque = 2

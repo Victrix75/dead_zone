@@ -184,6 +184,17 @@ def criar_fase_1(tela):
     }
 
 
+def criar_zumbi_pela_lateral(tela, linha_inimigo, classe_zumbi):
+    """Cria um zumbi numa borda, virado para o centro da tela."""
+    lado = random.choice(("esquerda", "direita"))
+    direcao = "direita" if lado == "esquerda" else "esquerda"
+    tamanho = configuracoes.TAMANHO_INIMIGO
+    if classe_zumbi is ZumbiForte:
+        tamanho = int(tamanho * 1.35)
+    x = -tamanho - 40 if lado == "esquerda" else tela.get_width() + 40
+    return classe_zumbi(x, linha_inimigo, direcao)
+
+
 def estado_fase_1(tela, eventos, dt, fase):
     """Atualiza a fase 1 um único frame por chamada, mantendo o ciclo estável."""
     jogador = fase["jogador"]
@@ -192,8 +203,8 @@ def estado_fase_1(tela, eventos, dt, fase):
     tiros = fase["tiros"]
     cenario = fase["cenario"]
     fase["tempo"] += dt
-    etapas_aceleracao = max(0, int((fase["tempo"] - 20) // 10) + 1)
-    multiplicador_velocidade = min(1 + etapas_aceleracao * 0.12, 2.2)
+    etapas_aceleracao = max(0, int((fase["tempo"] - 20) // 4) + 1)
+    multiplicador_velocidade = min(1 + etapas_aceleracao * 0.28, 3.0)
 
     for evento in eventos:
         if evento.type == pygame.QUIT:
@@ -228,7 +239,9 @@ def estado_fase_1(tela, eventos, dt, fase):
 
     fase["spawn_timer"] += dt * configuracoes.FPS
     if fase["tempo"] >= 15 and not fase["zumbi_forte_apareceu"]:
-        forte = ZumbiForte(tela.get_width() + 40, fase["linha_inimigo"])
+        forte = criar_zumbi_pela_lateral(
+            tela, fase["linha_inimigo"], ZumbiForte
+        )
         todos_sprites.add(forte)
         inimigos.add(forte)
         fase["zumbi_forte_apareceu"] = True
@@ -239,13 +252,15 @@ def estado_fase_1(tela, eventos, dt, fase):
             if fase["tempo"] >= 15 and random.random() < 0.25
             else ZumbiBasico
         )
-        robo = classe_zumbi(tela.get_width() + 40, fase["linha_inimigo"])
+        robo = criar_zumbi_pela_lateral(
+            tela, fase["linha_inimigo"], classe_zumbi
+        )
         todos_sprites.add(robo)
         inimigos.add(robo)
         fase["spawn_timer"] = 0
-        fator_intervalo = 0.85 ** etapas_aceleracao
+        fator_intervalo = 0.75 ** etapas_aceleracao
         fase["spawn_intervalo"] = max(
-            configuracoes.FPS,
+            configuracoes.FPS // 2,
             int(random.randint(210, 360) * fator_intervalo),
         )
 
