@@ -6,7 +6,7 @@ import configuracoes
 from cenario import Cenario
 from entidades.personagem import Jogador
 from entidades.projetil import Tiro
-from inimigos import ZumbiBasico
+from inimigos import ZumbiBasico, ZumbiForte
 from estados import (
     Botao,
     ESTADO_GAME_OVER,
@@ -178,7 +178,8 @@ def criar_fase_1(tela):
         "pontos": 0,
         "tempo": 0.0,
         "spawn_timer": 0,
-        "spawn_intervalo": random.randint(240, 420),
+        "spawn_intervalo": random.randint(210, 360),
+        "zumbi_forte_apareceu": False,
         "linha_inimigo": linha_chao,
     }
 
@@ -224,14 +225,35 @@ def estado_fase_1(tela, eventos, dt, fase):
                 jogador.cooldown_tiro = configuracoes.COOLDOWN_TIRO
 
     fase["spawn_timer"] += dt * configuracoes.FPS
+    if fase["tempo"] >= 15 and not fase["zumbi_forte_apareceu"]:
+        forte = ZumbiForte(tela.get_width() + 40, fase["linha_inimigo"])
+        todos_sprites.add(forte)
+        inimigos.add(forte)
+        fase["zumbi_forte_apareceu"] = True
+
     if fase["spawn_timer"] >= fase["spawn_intervalo"]:
-        robo = ZumbiBasico(tela.get_width() + 40, fase["linha_inimigo"])
+        classe_zumbi = (
+            ZumbiForte
+            if fase["tempo"] >= 15 and random.random() < 0.25
+            else ZumbiBasico
+        )
+        robo = classe_zumbi(tela.get_width() + 40, fase["linha_inimigo"])
         todos_sprites.add(robo)
         inimigos.add(robo)
         fase["spawn_timer"] = 0
-        fase["spawn_intervalo"] = random.randint(240, 420)
+        etapas_aceleracao = max(0, int((fase["tempo"] - 20) // 10) + 1)
+        fator_intervalo = 0.85 ** etapas_aceleracao
+        fase["spawn_intervalo"] = max(
+            configuracoes.FPS,
+            int(random.randint(210, 360) * fator_intervalo),
+        )
 
-    fase["pontos"] += len(pygame.sprite.groupcollide(inimigos, tiros, True, True))
+    acertos = pygame.sprite.groupcollide(inimigos, tiros, False, True)
+    for inimigo, tiros_acertados in acertos.items():
+        for _ in tiros_acertados:
+            inimigo.tomar_dano(1)
+        if not inimigo.alive():
+            fase["pontos"] += 1
 
     for inimigo in inimigos:
         inimigo.bloqueado = (
@@ -269,7 +291,7 @@ def estado_fase_1(tela, eventos, dt, fase):
     ]
     for inimigo in inimigos_atacando:
         if inimigo.pode_atacar():
-            jogador.tomar_dano(1)
+            jogador.tomar_dano(inimigo.dano_ataque)
             if not jogador.vivo:
                 return ESTADO_GAME_OVER, fase
 

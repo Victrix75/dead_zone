@@ -1,7 +1,12 @@
 import pygame
 
 import configuracoes
-from sprites import carregar_sprite_inimigo_estado, carregar_sprites_inimigo
+from sprites import (
+    carregar_sprite_inimigo_estado,
+    carregar_sprite_zumbi_forte_estado,
+    carregar_sprites_inimigo,
+    carregar_sprites_zumbi_forte,
+)
 
 
 class Inimigo(pygame.sprite.Sprite):
@@ -11,6 +16,7 @@ class Inimigo(pygame.sprite.Sprite):
         self.altura = altura
         self.velocidade = velocidade
         self.vida = vida
+        self.dano_ataque = 1
         self.tempo_ataque = 0.0
         self.bloqueado = False
         self.tempo_animacao = 0.0
@@ -82,6 +88,32 @@ class ZumbiBasico(Inimigo):
         self.configurar_sprites(carregar_sprites_inimigo(tamanho_sprite))
         self.sprites_ataque = carregar_sprite_inimigo_estado("zumbiataque.png", tamanho_sprite)
         self.sprites_dano = carregar_sprite_inimigo_estado("zumbidano.png", tamanho_sprite)
+
+    def update(self, dt=1/60):
+        super().update(dt)
+
+
+class ZumbiForte(Inimigo):
+    def __init__(self, x, y):
+        tamanho = configuracoes.TAMANHO_INIMIGO
+        super().__init__(
+            x=x,
+            y=y - tamanho,
+            largura=tamanho,
+            altura=tamanho,
+            velocidade=35,
+            vida=3,
+            cor=configuracoes.COR_CHEFAO,
+        )
+        tamanho_sprite = (tamanho, tamanho)
+        self.dano_ataque = 2
+        self.configurar_sprites(carregar_sprites_zumbi_forte(tamanho_sprite))
+        self.sprites_ataque = carregar_sprite_zumbi_forte_estado(
+            "zumbiataqueforte.png", tamanho_sprite
+        )
+        self.sprites_dano = carregar_sprite_zumbi_forte_estado(
+            "zumbifortedano.png", tamanho_sprite
+        )
 
     def update(self, dt=1/60):
         super().update(dt)

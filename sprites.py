@@ -184,6 +184,44 @@ def carregar_sprites_inimigo(tamanho=None):
     return {"esquerda": caminhada_esquerda, "direita": caminhada_direita}
 
 
+def carregar_sprites_zumbi_forte(tamanho=None):
+    """Carrega a caminhada do zumbi forte e espelha os frames para a direita."""
+    diretorio = os.path.join(
+        os.path.dirname(__file__), "entidades", "front", "sprites", "inimigo"
+    )
+    arquivos = [
+        arquivo
+        for arquivo in glob.glob(os.path.join(diretorio, "*"))
+        if os.path.splitext(os.path.basename(arquivo))[0]
+        .lower()
+        .startswith("zumbiforteesquerda")
+    ]
+    arquivos.sort(key=_numero_do_arquivo)
+    caminhada_esquerda = [load_image(arquivo, tamanho) for arquivo in arquivos]
+    caminhada_direita = [
+        pygame.transform.flip(imagem, True, False)
+        for imagem in caminhada_esquerda
+    ]
+    return {"esquerda": caminhada_esquerda, "direita": caminhada_direita}
+
+
+def carregar_sprite_zumbi_forte_estado(nome_arquivo, tamanho=None):
+    """Carrega um estado do zumbi forte e cria o frame espelhado."""
+    caminho = os.path.join(
+        os.path.dirname(__file__),
+        "entidades",
+        "front",
+        "sprites",
+        "inimigo",
+        nome_arquivo,
+    )
+    imagem = load_image(caminho, tamanho)
+    return {
+        "esquerda": imagem,
+        "direita": pygame.transform.flip(imagem, True, False),
+    }
+
+
 def carregar_sprite_inimigo_estado(nome_arquivo, tamanho=None):
     """Carrega um estado especial do zumbi e cria a versão espelhada."""
     caminho = os.path.join(
