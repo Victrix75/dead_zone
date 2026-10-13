@@ -306,9 +306,24 @@ def estado_fase_1(tela, eventos, dt, fase):
 
     todos_sprites.update(dt)
 
-    # Bloqueia somente o jogador quando a hitbox menor entra no inimigo.
+    inimigos_em_contato = [
+        inimigo
+        for inimigo in inimigos
+        if jogador.hitbox.colliderect(inimigo.rect)
+    ]
+    contato_esquerda = any(
+        inimigo.rect.centerx < jogador.hitbox.centerx
+        for inimigo in inimigos_em_contato
+    )
+    contato_direita = any(
+        inimigo.rect.centerx > jogador.hitbox.centerx
+        for inimigo in inimigos_em_contato
+    )
+    cercado = contato_esquerda and contato_direita
+
+    # Evita que a correção de colisão alterne o jogador entre dois lados.
     for inimigo in inimigos:
-        if not jogador.hitbox.colliderect(inimigo.rect):
+        if cercado or not jogador.hitbox.colliderect(inimigo.rect):
             continue
         if jogador.vel.x > 0:
             jogador.hitbox.right = inimigo.rect.left
