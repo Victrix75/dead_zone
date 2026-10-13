@@ -15,6 +15,7 @@ class Inimigo(pygame.sprite.Sprite):
         self.largura = largura
         self.altura = altura
         self.velocidade = velocidade
+        self.multiplicador_velocidade = 1.0
         self.vida = vida
         self.dano_ataque = 1
         self.tempo_ataque = 0.0
@@ -46,7 +47,7 @@ class Inimigo(pygame.sprite.Sprite):
 
     def update(self, dt=1/60):
         if not self.bloqueado:
-            self.rect.x -= self.velocidade * dt
+            self.rect.x -= self.velocidade * self.multiplicador_velocidade * dt
         self.tempo_ataque = max(0.0, self.tempo_ataque - dt)
         self.tempo_sprite_especial = max(0.0, self.tempo_sprite_especial - dt)
         self.tempo_animacao += dt if not self.bloqueado else 0
@@ -95,7 +96,7 @@ class ZumbiBasico(Inimigo):
 
 class ZumbiForte(Inimigo):
     def __init__(self, x, y):
-        tamanho = configuracoes.TAMANHO_INIMIGO
+        tamanho = int(configuracoes.TAMANHO_INIMIGO * 1.35)
         super().__init__(
             x=x,
             y=y - tamanho,

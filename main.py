@@ -192,6 +192,8 @@ def estado_fase_1(tela, eventos, dt, fase):
     tiros = fase["tiros"]
     cenario = fase["cenario"]
     fase["tempo"] += dt
+    etapas_aceleracao = max(0, int((fase["tempo"] - 20) // 10) + 1)
+    multiplicador_velocidade = min(1 + etapas_aceleracao * 0.12, 2.2)
 
     for evento in eventos:
         if evento.type == pygame.QUIT:
@@ -241,7 +243,6 @@ def estado_fase_1(tela, eventos, dt, fase):
         todos_sprites.add(robo)
         inimigos.add(robo)
         fase["spawn_timer"] = 0
-        etapas_aceleracao = max(0, int((fase["tempo"] - 20) // 10) + 1)
         fator_intervalo = 0.85 ** etapas_aceleracao
         fase["spawn_intervalo"] = max(
             configuracoes.FPS,
@@ -256,6 +257,7 @@ def estado_fase_1(tela, eventos, dt, fase):
             fase["pontos"] += 1
 
     for inimigo in inimigos:
+        inimigo.multiplicador_velocidade = multiplicador_velocidade
         inimigo.bloqueado = (
             inimigo.rect.left <= jogador.rect.right
             and inimigo.rect.right >= jogador.rect.left
