@@ -1,7 +1,12 @@
 from abc import ABC, abstractmethod
 import pygame
 import configuracoes
-from sprites import carregar_sprites_jogador, carregar_sprite_tiro, carregar_sprite_dano
+from sprites import (
+    carregar_sprites_jogador,
+    carregar_sprites_morte_jogador,
+    carregar_sprite_tiro,
+    carregar_sprite_dano,
+)
 
 
 class Personagem(pygame.sprite.Sprite, ABC):
@@ -101,6 +106,7 @@ class Jogador(Personagem):
         self.esta_no_chao = False
         tamanho = (configuracoes.TAMANHO_JOGADOR, configuracoes.TAMANHO_JOGADOR)
         self.sprites = carregar_sprites_jogador(tamanho)
+        self.sprites_morte = carregar_sprites_morte_jogador(tamanho)
         self.sprites_tiro = carregar_sprite_tiro("Jogador", tamanho)
         self.sprites_dano = carregar_sprite_dano("Jogador", tamanho)
         self._atualizar_imagem()

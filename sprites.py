@@ -63,6 +63,16 @@ def carregar_sprites_jogador(tamanho=None):
     return carregar_sprites("Jogador", tamanho)
 
 
+def carregar_sprites_morte_jogador(tamanho=None):
+    """Carrega as poses de morte do jogador em ordem crescente."""
+    diretorio = os.path.join(
+        os.path.dirname(__file__), "entidades", "front", "sprites", "jogador"
+    )
+    arquivos = glob.glob(os.path.join(diretorio, "jogador,morte,*"))
+    arquivos.sort(key=_numero_do_arquivo)
+    return [load_image(arquivo, tamanho) for arquivo in arquivos]
+
+
 def carregar_sprite_tiro(classe, tamanho=None):
     """Procura por imagens de tiro em subdiretórios ou com sufixo 'tiro'.
     Ex: Jogador,direita,tiro.png ou pasta tiro/Jogador,direita,1.png

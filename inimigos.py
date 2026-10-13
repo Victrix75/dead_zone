@@ -97,7 +97,7 @@ class ZumbiBasico(Inimigo):
             y=y - tamanho,
             largura=tamanho,
             altura=tamanho,
-            velocidade=100,
+            velocidade=90,
             vida=1,
             cor=configuracoes.COR_INIMIGO,
             direcao=direcao,

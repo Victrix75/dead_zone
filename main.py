@@ -180,6 +180,7 @@ def criar_fase_1(tela):
         "spawn_timer": 0,
         "spawn_intervalo": random.randint(210, 360),
         "zumbi_forte_apareceu": False,
+        "morte_timer": None,
         "linha_inimigo": linha_chao,
     }
 
@@ -195,6 +196,23 @@ def criar_zumbi_pela_lateral(tela, linha_inimigo, classe_zumbi):
     return classe_zumbi(x, linha_inimigo, direcao)
 
 
+def estado_animacao_morte(tela, eventos, dt, fase):
+    """Mostra a pose sem sangue e depois com sangue antes do game over."""
+    if any(evento.type == pygame.QUIT for evento in eventos):
+        return ESTADO_SAIR, fase
+
+    fase["morte_timer"] += dt
+    indice_sprite = 0 if fase["morte_timer"] < 1.0 else 1
+    fase["jogador"].image = fase["jogador"].sprites_morte[indice_sprite]
+    fase["cenario"].desenhar()
+    fase["todos_sprites"].draw(tela)
+    pygame.display.flip()
+
+    if fase["morte_timer"] >= 2.0:
+        return ESTADO_GAME_OVER, fase
+    return ESTADO_FASE_1, fase
+
+
 def estado_fase_1(tela, eventos, dt, fase):
     """Atualiza a fase 1 um único frame por chamada, mantendo o ciclo estável."""
     jogador = fase["jogador"]
@@ -202,9 +220,12 @@ def estado_fase_1(tela, eventos, dt, fase):
     inimigos = fase["inimigos"]
     tiros = fase["tiros"]
     cenario = fase["cenario"]
+    if fase["morte_timer"] is not None:
+        return estado_animacao_morte(tela, eventos, dt, fase)
+
     fase["tempo"] += dt
     etapas_aceleracao = max(0, int((fase["tempo"] - 20) // 4) + 1)
-    multiplicador_velocidade = min(1 + etapas_aceleracao * 0.28, 3.0)
+    multiplicador_velocidade = min(1 + etapas_aceleracao * 0.20, 3.0)
 
     for evento in eventos:
         if evento.type == pygame.QUIT:
@@ -310,7 +331,11 @@ def estado_fase_1(tela, eventos, dt, fase):
         if inimigo.pode_atacar():
             jogador.tomar_dano(inimigo.dano_ataque)
             if not jogador.vivo:
-                return ESTADO_GAME_OVER, fase
+                fase["morte_timer"] = 0.0
+                break
+
+    if fase["morte_timer"] is not None:
+        return estado_animacao_morte(tela, eventos, dt, fase)
 
     inimigos_ordenados = sorted(inimigos, key=lambda inimigo: inimigo.rect.left)
     for anterior, atual in zip(inimigos_ordenados, inimigos_ordenados[1:]):
