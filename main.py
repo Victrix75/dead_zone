@@ -164,6 +164,8 @@ def criar_fase_1(tela):
         tela.get_width() // 2,
         linha_chao - configuracoes.TAMANHO_JOGADOR,
     )
+    jogador.chao_y = linha_chao
+    jogador.esta_no_chao = True
     cenario = Cenario(tela)
     todos_sprites.add(jogador)
 
@@ -196,7 +198,9 @@ def estado_fase_1(tela, eventos, dt, fase):
         elif evento.type == pygame.KEYDOWN:
             if evento.key == pygame.K_ESCAPE:
                 return ESTADO_MENU, None
-            elif evento.key == pygame.K_SPACE:
+            elif evento.key in (pygame.K_SPACE, pygame.K_w, pygame.K_UP):
+                jogador.pular()
+            elif evento.key == pygame.K_f:
                 if jogador.cooldown_tiro <= 0:
                     direcao_tiro = 1 if jogador.direcao == "direita" else -1
                     tiro = Tiro(
@@ -207,6 +211,17 @@ def estado_fase_1(tela, eventos, dt, fase):
                     todos_sprites.add(tiro)
                     tiros.add(tiro)
                     jogador.cooldown_tiro = configuracoes.COOLDOWN_TIRO
+        elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            if jogador.cooldown_tiro <= 0:
+                direcao_tiro = 1 if jogador.direcao == "direita" else -1
+                tiro = Tiro(
+                    jogador.rect.centerx + direcao_tiro * jogador.rect.width // 2,
+                    jogador.rect.centery,
+                    direcao_tiro,
+                )
+                todos_sprites.add(tiro)
+                tiros.add(tiro)
+                jogador.cooldown_tiro = configuracoes.COOLDOWN_TIRO
 
     fase["spawn_timer"] += dt * configuracoes.FPS
     if fase["spawn_timer"] >= fase["spawn_intervalo"]:

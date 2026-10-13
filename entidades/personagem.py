@@ -97,6 +97,8 @@ class Jogador(Personagem):
         self._esta_se_movendo = False
         self.numero_sprite = 1
         self._contador_animacao = 0
+        self.chao_y = None
+        self.esta_no_chao = False
         tamanho = (configuracoes.TAMANHO_JOGADOR, configuracoes.TAMANHO_JOGADOR)
         self.sprites = carregar_sprites_jogador(tamanho)
         self.sprites_tiro = carregar_sprite_tiro("Jogador", tamanho)
@@ -105,6 +107,13 @@ class Jogador(Personagem):
         self.cooldown_tiro = 0
         self._dano_timer = 0
         self._DANO_MOSTRAR = 20
+
+    def pular(self):
+        if not self.esta_no_chao:
+            return False
+        self.vel.y = configuracoes.FORCA_PULO_JOGADOR
+        self.esta_no_chao = False
+        return True
 
     def _atualizar_imagem(self):
         direcao = "direita" if not self._esta_se_movendo else self.direcao
@@ -116,7 +125,6 @@ class Jogador(Personagem):
     def update(self, dt=1/60):
         teclas = pygame.key.get_pressed()
         self.vel.x = 0
-        self.vel.y = 0
 
         if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
             self.vel.x = -configuracoes.VELOCIDADE_JOGADOR
@@ -125,9 +133,20 @@ class Jogador(Personagem):
             self.vel.x = configuracoes.VELOCIDADE_JOGADOR
             self.direcao = "direita"
 
-        self._esta_se_movendo = self.vel.length_squared() > 0
+        if not self.esta_no_chao:
+            self.vel.y = min(self.vel.y + configuracoes.GRAVIDADE, configuracoes.VEL_QUEDA_LIVRE)
+
+        self._esta_se_movendo = self.vel.x != 0 or self.vel.y != 0
         self.rect.x += self.vel.x * dt
-        self.rect.y += self.vel.y * dt
+        self.rect.y += self.vel.y * dt * 60
+
+        if self.chao_y is not None:
+            if self.rect.bottom >= self.chao_y and self.vel.y >= 0:
+                self.rect.bottom = self.chao_y
+                self.vel.y = 0
+                self.esta_no_chao = True
+            else:
+                self.esta_no_chao = False
 
         tela = pygame.display.get_surface()
         if tela:
