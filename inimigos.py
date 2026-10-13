@@ -33,6 +33,8 @@ class Inimigo(pygame.sprite.Sprite):
         self.tempo_animacao = 0.0
         self.tempo_sprite_especial = 0.0
         self.sprite_especial = None
+        self.morrendo = False
+        self.tempo_corpo = 0.0
         self.direcao = direcao
         self.cor = cor or configuracoes.COR_INIMIGO
         self.image = pygame.Surface((largura, altura), pygame.SRCALPHA)
@@ -56,6 +58,12 @@ class Inimigo(pygame.sprite.Sprite):
         self.atualizar_sprite()
 
     def update(self, dt=1/60):
+        if self.morrendo:
+            self.tempo_corpo -= dt
+            if self.tempo_corpo <= 1e-6:
+                self.kill()
+            return
+
         if not self.bloqueado:
             deslocamento = self.velocidade * self.multiplicador_velocidade * dt
             if self.direcao == "esquerda":
@@ -73,15 +81,20 @@ class Inimigo(pygame.sprite.Sprite):
             self.kill()
 
     def tomar_dano(self, dano):
+        if self.morrendo:
+            return
         self.vida -= dano
         if self.sprites_dano:
             self.sprite_especial = self.sprites_dano
             self.tempo_sprite_especial = 0.2
         if self.vida <= 0:
-            self.kill()
+            self.morrendo = True
+            self.tempo_corpo = 2.0
+            self.tempo_sprite_especial = 0.0
+            self.image = self.sprites_morte[self.direcao]
 
     def pode_atacar(self):
-        if self.tempo_ataque > 0:
+        if self.morrendo or self.tempo_ataque > 0:
             return False
         self.tempo_ataque = configuracoes.COOLDOWN_ATAQUE_INIMIGO
         self.sprite_especial = self.sprites_ataque
@@ -106,6 +119,9 @@ class ZumbiBasico(Inimigo):
         self.configurar_sprites(carregar_sprites_inimigo(tamanho_sprite))
         self.sprites_ataque = carregar_sprite_inimigo_estado("zumbiataque.png", tamanho_sprite)
         self.sprites_dano = carregar_sprite_inimigo_estado("zumbidano.png", tamanho_sprite)
+        self.sprites_morte = carregar_sprite_inimigo_estado(
+            "zumbimortebasico.png", tamanho_sprite
+        )
 
     def update(self, dt=1/60):
         super().update(dt)
@@ -132,6 +148,9 @@ class ZumbiForte(Inimigo):
         )
         self.sprites_dano = carregar_sprite_zumbi_forte_estado(
             "zumbifortedano.png", tamanho_sprite
+        )
+        self.sprites_morte = carregar_sprite_zumbi_forte_estado(
+            "zumbifortemorte.png", tamanho_sprite
         )
 
     def update(self, dt=1/60):

@@ -157,6 +157,7 @@ def criar_fase_1(tela):
     """Cria os grupos e objetos da fase 1 apenas uma vez."""
     todos_sprites = pygame.sprite.Group()
     inimigos = pygame.sprite.Group()
+    corpos_zumbis = pygame.sprite.Group()
     tiros = pygame.sprite.Group()
 
     linha_chao = tela.get_height() - 80
@@ -172,6 +173,7 @@ def criar_fase_1(tela):
     return {
         "todos_sprites": todos_sprites,
         "inimigos": inimigos,
+        "corpos_zumbis": corpos_zumbis,
         "tiros": tiros,
         "jogador": jogador,
         "cenario": cenario,
@@ -218,6 +220,7 @@ def estado_fase_1(tela, eventos, dt, fase):
     jogador = fase["jogador"]
     todos_sprites = fase["todos_sprites"]
     inimigos = fase["inimigos"]
+    corpos_zumbis = fase["corpos_zumbis"]
     tiros = fase["tiros"]
     cenario = fase["cenario"]
     if fase["morte_timer"] is not None:
@@ -289,7 +292,9 @@ def estado_fase_1(tela, eventos, dt, fase):
     for inimigo, tiros_acertados in acertos.items():
         for _ in tiros_acertados:
             inimigo.tomar_dano(1)
-        if not inimigo.alive():
+        if inimigo.morrendo:
+            inimigos.remove(inimigo)
+            corpos_zumbis.add(inimigo)
             fase["pontos"] += 1
 
     for inimigo in inimigos:
