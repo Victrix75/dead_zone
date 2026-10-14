@@ -344,37 +344,69 @@ def estado_fase_1(tela, eventos, dt, fase, efeitos):
             and inimigo.rect.right >= jogador.rect.left
         )
 
+    hitbox_anterior = jogador.hitbox.copy()
     todos_sprites.update(dt)
 
     inimigos_em_contato = [
         inimigo
         for inimigo in inimigos
-        if jogador.hitbox.colliderect(inimigo.rect)
+        if jogador.hitbox.top < inimigo.rect.bottom
+        and jogador.hitbox.bottom > inimigo.rect.top
+        and (
+            jogador.hitbox.colliderect(inimigo.rect)
+            or (
+                hitbox_anterior.right <= inimigo.rect.left
+                and jogador.hitbox.right > inimigo.rect.left
+            )
+            or (
+                hitbox_anterior.left >= inimigo.rect.right
+                and jogador.hitbox.left < inimigo.rect.right
+            )
+        )
     ]
-    contato_esquerda = any(
-        inimigo.rect.centerx < jogador.hitbox.centerx
-        for inimigo in inimigos_em_contato
-    )
-    contato_direita = any(
-        inimigo.rect.centerx > jogador.hitbox.centerx
-        for inimigo in inimigos_em_contato
-    )
-    cercado = contato_esquerda and contato_direita
 
-    # Evita que a correção de colisão alterne o jogador entre dois lados.
-    for inimigo in inimigos:
-        if cercado or not jogador.hitbox.colliderect(inimigo.rect):
-            continue
-        if jogador.vel.x > 0:
-            jogador.hitbox.right = inimigo.rect.left
-        elif jogador.vel.x < 0:
-            jogador.hitbox.left = inimigo.rect.right
-        elif jogador.vel.x == 0:
-            continue
-        elif jogador.hitbox.centerx < inimigo.rect.centerx:
+    if jogador.vel.x > 0:
+        bloqueadores = [
+            inimigo
+            for inimigo in inimigos_em_contato
+            if inimigo.rect.centerx >= hitbox_anterior.centerx
+            and (
+                jogador.hitbox.colliderect(inimigo.rect)
+                or hitbox_anterior.right <= inimigo.rect.left
+            )
+        ]
+        if bloqueadores:
+            jogador.hitbox.right = min(
+                inimigo.rect.left for inimigo in bloqueadores
+            )
+    elif jogador.vel.x < 0:
+        bloqueadores = [
+            inimigo
+            for inimigo in inimigos_em_contato
+            if inimigo.rect.centerx <= hitbox_anterior.centerx
+            and (
+                jogador.hitbox.colliderect(inimigo.rect)
+                or hitbox_anterior.left >= inimigo.rect.right
+            )
+        ]
+        if bloqueadores:
+            jogador.hitbox.left = max(
+                inimigo.rect.right for inimigo in bloqueadores
+            )
+    elif inimigos_em_contato:
+        inimigo = min(
+            inimigos_em_contato,
+            key=lambda item: min(
+                abs(jogador.hitbox.right - item.rect.left),
+                abs(jogador.hitbox.left - item.rect.right),
+            ),
+        )
+        if jogador.hitbox.centerx < inimigo.rect.centerx:
             jogador.hitbox.right = inimigo.rect.left
         else:
             jogador.hitbox.left = inimigo.rect.right
+
+    if inimigos_em_contato:
         jogador.rect.center = jogador.hitbox.center
         jogador.pos.x = jogador.rect.x
         jogador.atualizar_hitbox()
@@ -400,9 +432,11 @@ def estado_fase_1(tela, eventos, dt, fase, efeitos):
 
     inimigos_ordenados = sorted(inimigos, key=lambda inimigo: inimigo.rect.left)
     for anterior, atual in zip(inimigos_ordenados, inimigos_ordenados[1:]):
-        distancia_minima = anterior.rect.width + 10
         if atual.rect.left < anterior.rect.right + 10:
-            atual.rect.left = anterior.rect.left + distancia_minima
+            if atual.bloqueado and not anterior.bloqueado:
+                anterior.rect.right = atual.rect.left - 10
+            elif not atual.bloqueado:
+                atual.rect.left = anterior.rect.right + 10
 
     cenario.desenhar()
     todos_sprites.draw(tela)

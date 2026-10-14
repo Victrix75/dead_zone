@@ -98,7 +98,7 @@ class Personagem(pygame.sprite.Sprite, ABC):
 
 class Jogador(Personagem):
     def __init__(self, x, y):
-        super().__init__(x, y, configuracoes.TAMANHO_JOGADOR, configuracoes.TAMANHO_JOGADOR, 10)
+        super().__init__(x, y, configuracoes.TAMANHO_JOGADOR, configuracoes.TAMANHO_JOGADOR, 500)
         self.direcao = "direita"
         self._esta_se_movendo = False
         self.numero_sprite = 1
