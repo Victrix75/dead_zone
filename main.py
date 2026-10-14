@@ -86,13 +86,22 @@ def separar_filas_inimigos(inimigos, distancia=10):
                         zumbi.rect.x += deslocamento
 
 
+def carregar_fundo(tela, nome_arquivo):
+    """Carrega uma arte de tela cheia sem distorcer sua proporção."""
+    caminho = Path(__file__).parent / "cenario" / nome_arquivo
+    imagem = pygame.image.load(caminho).convert()
+    largura, altura = tela.get_size()
+    escala = max(largura / imagem.get_width(), altura / imagem.get_height())
+    tamanho = (round(imagem.get_width() * escala), round(imagem.get_height() * escala))
+    imagem = pygame.transform.smoothscale(imagem, tamanho)
+    fundo = pygame.Surface(tela.get_size())
+    fundo.blit(imagem, imagem.get_rect(center=fundo.get_rect().center))
+    return fundo
+
+
 def criar_menu(tela):
     """Cria os botões do menu inicial com as opções de jogar e sair."""
-    fonte_titulo = pygame.font.Font(None, 72)
     fonte_botao = pygame.font.Font(None, 42)
-
-    titulo = fonte_titulo.render(configuracoes.TITULO, True, configuracoes.COR_TEXTO)
-    titulo_rect = titulo.get_rect(center=(tela.get_width() // 2, 140))
 
     largura_botao = 220
     altura_botao = 60
@@ -122,14 +131,13 @@ def criar_menu(tela):
         ),
     }
 
-    return titulo, titulo_rect, botoes
+    return botoes
 
 
-def estado_menu(tela, eventos):
+def estado_menu(tela, eventos, fundo):
     """Renderiza e controla a tela inicial do jogo."""
-    titulo, titulo_rect, botoes = criar_menu(tela)
-    tela.fill(configuracoes.BG_COR)
-    tela.blit(titulo, titulo_rect)
+    botoes = criar_menu(tela)
+    tela.blit(fundo, (0, 0))
 
     for botao in botoes.values():
         botao.desenhar(tela)
@@ -156,17 +164,12 @@ def formatar_tempo(segundos):
     return f"{minutos:02d}:{segundos_restantes:02d}"
 
 
-def estado_game_over(tela, eventos, pontos, tempo):
+def estado_game_over(tela, eventos, pontos, tempo, fundo):
     """Renderiza a tela de derrota e controla suas opções."""
-    fonte_titulo = pygame.font.Font(None, 84)
     fonte_pontos = pygame.font.Font(None, 42)
     fonte_botao = pygame.font.Font(None, 36)
 
-    tela.fill((35, 12, 18))
-
-    titulo = fonte_titulo.render("GAME OVER", True, (220, 60, 70))
-    titulo_rect = titulo.get_rect(center=(tela.get_width() // 2, 170))
-    tela.blit(titulo, titulo_rect)
+    tela.blit(fundo, (0, 0))
 
     resultado = fonte_pontos.render(
         f"Pontuação: {pontos}  |  Tempo: {formatar_tempo(tempo)}",
@@ -487,6 +490,8 @@ def main():
     pygame.init()
     musicas, efeitos = carregar_audio()
     tela = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    fundo_menu = carregar_fundo(tela, "tela_inicial.jpg")
+    fundo_game_over = carregar_fundo(tela, "tela_game_over.jpg")
     pygame.display.set_caption(configuracoes.TITULO)
     relogio = pygame.time.Clock()
 
@@ -502,7 +507,7 @@ def main():
         estado_musica = atualizar_musica(estado_atual, musicas, estado_musica)
 
         if estado_atual == ESTADO_MENU:
-            proximo_estado = estado_menu(tela, eventos)
+            proximo_estado = estado_menu(tela, eventos, fundo_menu)
             if proximo_estado == ESTADO_FASE_1:
                 fase_1 = None
             estado_atual = proximo_estado
@@ -518,6 +523,7 @@ def main():
                 eventos,
                 fase_1["pontos"],
                 fase_1["tempo"],
+                fundo_game_over,
             )
             if proximo_estado == ESTADO_FASE_1:
                 fase_1 = None
