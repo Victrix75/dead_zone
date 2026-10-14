@@ -52,6 +52,40 @@ def atualizar_musica(estado, musicas, estado_musica):
     return estado
 
 
+def separar_filas_inimigos(inimigos, distancia=10):
+    """Mantém cada fila separada, movendo o bloco atrás do líder junto."""
+    for direcao in ("direita", "esquerda"):
+        fila = sorted(
+            (
+                inimigo
+                for inimigo in inimigos
+                if not inimigo.morrendo and inimigo.direcao == direcao
+            ),
+            key=lambda inimigo: inimigo.rect.centerx,
+            reverse=direcao == "direita",
+        )
+
+        for indice in range(1, len(fila)):
+            lider = fila[indice - 1]
+            seguidor = fila[indice]
+            if (
+                lider.rect.top >= seguidor.rect.bottom
+                or lider.rect.bottom <= seguidor.rect.top
+            ):
+                continue
+
+            if direcao == "direita":
+                deslocamento = seguidor.rect.right - lider.rect.left + distancia
+                if deslocamento > 0:
+                    for zumbi in fila[indice:]:
+                        zumbi.rect.x -= deslocamento
+            else:
+                deslocamento = lider.rect.right + distancia - seguidor.rect.left
+                if deslocamento > 0:
+                    for zumbi in fila[indice:]:
+                        zumbi.rect.x += deslocamento
+
+
 def criar_menu(tela):
     """Cria os botões do menu inicial com as opções de jogar e sair."""
     fonte_titulo = pygame.font.Font(None, 72)
@@ -430,13 +464,7 @@ def estado_fase_1(tela, eventos, dt, fase, efeitos):
     if fase["morte_timer"] is not None:
         return estado_animacao_morte(tela, eventos, dt, fase)
 
-    inimigos_ordenados = sorted(inimigos, key=lambda inimigo: inimigo.rect.left)
-    for anterior, atual in zip(inimigos_ordenados, inimigos_ordenados[1:]):
-        if atual.rect.left < anterior.rect.right + 10:
-            if atual.bloqueado and not anterior.bloqueado:
-                anterior.rect.right = atual.rect.left - 10
-            elif not atual.bloqueado:
-                atual.rect.left = anterior.rect.right + 10
+    separar_filas_inimigos(inimigos)
 
     cenario.desenhar()
     todos_sprites.draw(tela)
