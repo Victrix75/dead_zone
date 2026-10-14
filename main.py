@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 
 import pygame
 
@@ -14,6 +15,41 @@ from estados import (
     ESTADO_FASE_1,
     ESTADO_SAIR,
 )
+
+
+def carregar_audio():
+    """Carrega as músicas e efeitos do diretório de sons."""
+    pasta_sons = Path(__file__).parent / "sounds"
+    musicas = {
+        ESTADO_MENU: (pasta_sons / "musica_menu_EpicZOMBIEsoundtrack.mp3", 0.65),
+        ESTADO_FASE_1: (pasta_sons / "jogo_rodando_Deadspace.mp3", 0.3),
+        ESTADO_GAME_OVER: (pasta_sons / "tela_game_over_theplague.mp3", 0.65),
+    }
+    efeitos = {
+        "jogador_tiro": pygame.mixer.Sound(pasta_sons / "jogador_tiro.mp3"),
+        "zumbi_ataque": pygame.mixer.Sound(pasta_sons / "zumbibasicoataque.mp3"),
+    }
+    for efeito in efeitos.values():
+        efeito.set_volume(0.65)
+    return musicas, efeitos
+
+
+def atualizar_musica(estado, musicas, estado_musica):
+    """Inicia em loop a música correspondente quando o estado muda."""
+    if estado == estado_musica:
+        return estado_musica
+
+    faixa = musicas.get(estado)
+    if faixa is None:
+        pygame.mixer.music.stop()
+        return None
+
+    caminho, volume = faixa
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load(caminho)
+    pygame.mixer.music.set_volume(volume)
+    pygame.mixer.music.play(-1)
+    return estado
 
 
 def criar_menu(tela):
@@ -215,7 +251,7 @@ def estado_animacao_morte(tela, eventos, dt, fase):
     return ESTADO_FASE_1, fase
 
 
-def estado_fase_1(tela, eventos, dt, fase):
+def estado_fase_1(tela, eventos, dt, fase, efeitos):
     """Atualiza a fase 1 um único frame por chamada, mantendo o ciclo estável."""
     jogador = fase["jogador"]
     todos_sprites = fase["todos_sprites"]
@@ -249,6 +285,7 @@ def estado_fase_1(tela, eventos, dt, fase):
                     todos_sprites.add(tiro)
                     tiros.add(tiro)
                     jogador.cooldown_tiro = jogador.cooldown_tiro_max
+                    efeitos["jogador_tiro"].play()
         elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             if jogador.cooldown_tiro <= 0:
                 direcao_tiro = 1 if jogador.direcao == "direita" else -1
@@ -260,6 +297,7 @@ def estado_fase_1(tela, eventos, dt, fase):
                 todos_sprites.add(tiro)
                 tiros.add(tiro)
                 jogador.cooldown_tiro = jogador.cooldown_tiro_max
+                efeitos["jogador_tiro"].play()
 
     fase["spawn_timer"] += dt * configuracoes.FPS
     if fase["tempo"] >= 15 and not fase["zumbi_forte_apareceu"]:
@@ -351,6 +389,7 @@ def estado_fase_1(tela, eventos, dt, fase):
     ]
     for inimigo in inimigos_atacando:
         if inimigo.pode_atacar():
+            efeitos["zumbi_ataque"].play()
             jogador.tomar_dano(inimigo.dano_ataque)
             if not jogador.vivo:
                 fase["morte_timer"] = 0.0
@@ -384,6 +423,7 @@ def estado_fase_1(tela, eventos, dt, fase):
 def main():
     """Ponto de entrada do jogo: controla os estados e o fluxo principal."""
     pygame.init()
+    musicas, efeitos = carregar_audio()
     tela = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption(configuracoes.TITULO)
     relogio = pygame.time.Clock()
@@ -392,10 +432,12 @@ def main():
     eventos = []
     fase_1 = None
     rodando = True
+    estado_musica = None
 
     while rodando:
         dt = relogio.tick(configuracoes.FPS) / 1000.0
         eventos = pygame.event.get()
+        estado_musica = atualizar_musica(estado_atual, musicas, estado_musica)
 
         if estado_atual == ESTADO_MENU:
             proximo_estado = estado_menu(tela, eventos)
@@ -405,7 +447,9 @@ def main():
         elif estado_atual == ESTADO_FASE_1:
             if fase_1 is None:
                 fase_1 = criar_fase_1(tela)
-            estado_atual, fase_1 = estado_fase_1(tela, eventos, dt, fase_1)
+            estado_atual, fase_1 = estado_fase_1(
+                tela, eventos, dt, fase_1, efeitos
+            )
         elif estado_atual == ESTADO_GAME_OVER:
             proximo_estado = estado_game_over(
                 tela,
