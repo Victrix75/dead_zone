@@ -28,6 +28,8 @@ def carregar_audio():
     efeitos = {
         "jogador_tiro": pygame.mixer.Sound(pasta_sons / "jogador_tiro.mp3"),
         "zumbi_ataque": pygame.mixer.Sound(pasta_sons / "zumbibasicoataque.mp3"),
+        "jogador_morte": pygame.mixer.Sound(pasta_sons / "die2.wav"),
+        "zumbi_morte": pygame.mixer.Sound(pasta_sons / "mortezumbi.wav"),
     }
     for efeito in efeitos.values():
         efeito.set_volume(0.65)
@@ -368,6 +370,7 @@ def estado_fase_1(tela, eventos, dt, fase, efeitos):
         for _ in tiros_acertados:
             inimigo.tomar_dano(1)
         if inimigo.morrendo:
+            efeitos["zumbi_morte"].play()
             inimigos.remove(inimigo)
             corpos_zumbis.add(inimigo)
             fase["pontos"] += 1
@@ -462,6 +465,7 @@ def estado_fase_1(tela, eventos, dt, fase, efeitos):
             jogador.tomar_dano(inimigo.dano_ataque)
             if not jogador.vivo:
                 fase["morte_timer"] = 0.0
+                efeitos["jogador_morte"].play()
                 break
 
     if fase["morte_timer"] is not None:
